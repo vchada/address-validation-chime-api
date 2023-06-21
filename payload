@@ -1,0 +1,9 @@
+{
+  "AwsAccountId": "process.env.AWS_ACCOUNT_ID",
+  "StreetNumber": "20512",
+  "StreetInfo": "bargene",
+  "City": "germantown",
+  "State": "MD",
+  "Country": "US",
+  "PostalCode": "20874"
+}
