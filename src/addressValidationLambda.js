@@ -5,7 +5,7 @@ export const handler = async (event, context) => {
     // Initialize Amazon Chime SDK
     const chime = new AWS.Chime({ region: 'us-east-1' });
 
-    // Extract the required parameters from the event payload
+    // Extract the required parameters from the event body
     const {
       AwsAccountId,
       StreetNumber,
@@ -14,7 +14,7 @@ export const handler = async (event, context) => {
       State,
       Country,
       PostalCode
-    } = event;
+    } = JSON.parse(event.body);
 
     // Validate the E911 address using the Amazon Chime API
     const validateAddressResponse = await chime.validateE911Address({
@@ -27,10 +27,45 @@ export const handler = async (event, context) => {
       PostalCode
     }).promise();
 
+    const {
+      ValidationResult,
+      AddressExternalId,
+      Address: {
+        streetName,
+        streetSuffix,
+        postDirectional,
+        preDirectional,
+        streetNumber,
+        city,
+        state,
+        postalCode,
+        postalCodePlus4,
+        country
+      }
+    } = validateAddressResponse;
+    
+    // Format the address as needed
+    const formattedAddress = `${streetNumber} ${preDirectional || ''} ${streetName} ${streetSuffix || ''} ${postDirectional || ''}, ${city}, ${state} ${postalCode}${postalCodePlus4 ? `-${postalCodePlus4}` : ''}, ${country}`;
+
+    // Construct the Civic Address JSON object
+    const civicAddress = {
+      country: country,
+      RD: preDirectional ? preDirectional + ' ' + streetNumber : streetNumber,
+      A3: city,
+      PC: postalCode,
+      HNO: streetNumber,
+      STS: streetSuffix,
+      A1: state
+    };
+   
     // Return the response from the ValidateE911Address API call
     return {
-      statusCode: 200,
-      body: JSON.stringify(validateAddressResponse),
+       statusCode: 200,
+      body: JSON.stringify({
+        ValidationResult,
+        AddressExternalId,
+        CivicAddress: civicAddress
+      }),
     };
   } catch (error) {
     // Handle any errors and return an error response
